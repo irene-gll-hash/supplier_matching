@@ -1,0 +1,793 @@
+{
+  "name": "Enrich and score leads with AI",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "03f97441-4ae1-4847-bdff-2675f52b7cd6",
+      "name": "Email Trigger (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "position": [
+        128,
+        1360
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.textHtml }}",
+        "options": {}
+      },
+      "id": "9dda06ac-f8dc-4582-8dd1-26edf7f73d14",
+      "name": "Markdown",
+      "type": "n8n-nodes-base.markdown",
+      "position": [
+        400,
+        1360
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Email Trigger (IMAP)').item.json.to }}",
+        "toEmail": "={{ $('Email Trigger (IMAP)').item.json.from }}",
+        "subject": "=Re: {{ $('Email Trigger (IMAP)').item.json.subject }}",
+        "html": "={{ $('Set Email text').item.json.email }}",
+        "options": {}
+      },
+      "id": "fe68a745-56e7-47c5-b407-7fafbef459ab",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        2368,
+        1344
+      ],
+      "webhookId": "a79ae1b4-648c-4cb4-b6cd-04ea3c1d9314",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "operationMode": "nodeInputBinary",
+        "options": {
+          "binaryDataKey": "={{ $json.data }}",
+          "summarizationMethodAndPrompts": {
+            "values": {
+              "combineMapPrompt": "=Write a concise summary of the following in max 100 words:\n\n\"{{ $json.data }}\"\n\nDo not enter the total number of words used.",
+              "prompt": "=Write a concise summary of the following in max 100 words:\n\n\"{{ $json.data }}\"\n\nDo not enter the total number of words used."
+            }
+          }
+        }
+      },
+      "id": "280bcc4c-f5e9-4e72-a757-26f29287fe04",
+      "name": "Email Summarization Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "position": [
+        656,
+        1360
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write the text to reply to the following email:\n\n{{ $json.response.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert at answering emails. You need to answer them professionally based on the information you have. This is a business email. Be concise and never exceed 100 words. Only the body of the email, not create the subject"
+        }
+      },
+      "id": "8943915d-0717-4a96-a259-439475f2df86",
+      "name": "Write email",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1104,
+        1360
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "346b829e-58dd-41f9-bc9d-cd62d4724f6d",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1040,
+        1584
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "content": "Chain that summarizes the received email",
+        "height": 240,
+        "width": 320
+      },
+      "id": "62c6c3a2-1faa-4825-b9fa-73e3ad04719f",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        640,
+        1280
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Agent that retrieves business information from a vector database and processes the response",
+        "height": 240,
+        "width": 340
+      },
+      "id": "31c36689-af90-4a11-bec5-eb417ae5d914",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1088,
+        1280
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Convert email to Markdown format for better understanding of LLM models",
+        "height": 240
+      },
+      "id": "757b9e66-c351-4bc4-824e-70d37171b8fd",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        1280
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "If the feedback is OK send email",
+        "height": 180
+      },
+      "id": "00eaa833-f744-42a2-b3f9-36fe904b4823",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2064,
+        1328
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "fromEmail": "user@example.com",
+        "toEmail": "user@example.com",
+        "subject": "=[Approval Required]  {{ $('Email Trigger (IMAP)').item.json.subject }}",
+        "message": "=<h3>MESSAGE</h3>\n{{ $('Email Trigger (IMAP)').item.json.textHtml }}\n\n<h3>AI RESPONSE</h3>\n{{ $json.email }}",
+        "options": {}
+      },
+      "id": "672a101a-7d73-4c82-904f-e972c0dea0f3",
+      "name": "Approve Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1824,
+        1360
+      ],
+      "webhookId": "4f9f06e7-9b2b-4896-9b51-245972341d12",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "deepseek-chat",
+          "cachedResultName": "deepseek-chat"
+        },
+        "options": {}
+      },
+      "id": "6e76b269-7605-41d7-8aba-08c375ce1b36",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        624,
+        1584
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "35d7c303-42f4-4dd1-b41e-6eb087c23c3d",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "28beaa06-0ae6-4241-9014-c63d3ded2885",
+      "name": "Set Email text",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1536,
+        1360
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "content": "Human in the loop",
+        "height": 180
+      },
+      "id": "5a0833fd-746b-4daa-9027-0d5b914dc959",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        1328
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "62e26bc5-1732-4699-a602-99490c7406fd",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7a3c095e-e0a7-498e-bb17-ea384f3aea60",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2128,
+        1360
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "content": "ЭТАП СОСТАВЛЕНИЕ ПИСЬМА И НАПРАВЛЕНИЕ НА ПРОВЕРКУ И ОТПРАВКА\n",
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        912,
+        1088
+      ],
+      "typeVersion": 1,
+      "id": "ff2873f3-533e-40b3-bba0-329322cd0f29",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b9fe5a50-d637-454d-850d-c7dc2e2aec6e",
+      "name": "Lead Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -6256,
+        -800
+      ],
+      "webhookId": "lead-intake-webhook-id",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "content": " Lead Intake\n",
+        "height": 328,
+        "width": 480,
+        "color": 4
+      },
+      "id": "da319267-ab05-46b1-bd3d-276b1f33f34f",
+      "name": "Note: Intake",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -6320,
+        -960
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Новая регистрация поставщика → запуск workflow",
+        "height": 96,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -6128,
+        -912
+      ],
+      "typeVersion": 1,
+      "id": "f1984694-c924-471b-b67f-dadd3c00825c",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Get Pending Leads').item.json.website }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "f39fb8d7-c9fc-4e1b-92a7-9523c24dffad",
+      "name": "Fetch Lead Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -5584,
+        -864
+      ],
+      "typeVersion": 4.4,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst html = item.json.data || item.json.body || '';\n\n// Remove scripts, styles, and all HTML tags\nlet cleaned = html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\n// Limit to 2000 chars to avoid LLM token overflow\nif (cleaned.length > 2000) {\n  cleaned = cleaned.substring(0, 2000) + '...';\n}\n\nitem.json.website_content = cleaned;\nreturn [item];"
+      },
+      "id": "de965217-eca1-4bb8-bdac-e718cc04f3bd",
+      "name": "Strip HTML Tags",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -5360,
+        -864
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        656,
+        1408
+      ],
+      "typeVersion": 1,
+      "id": "a64f50a4-ac54-443e-b151-896fdf6a64e4",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 880,
+        "width": 2944,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -96,
+        976
+      ],
+      "typeVersion": 1,
+      "id": "b4bd7ab8-1e15-4d2c-b995-389fe638873f",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 304,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -5696,
+        -960
+      ],
+      "typeVersion": 1,
+      "id": "850f6c52-8f6c-47c0-978f-75b5f0bd1074",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3d7f9677-c753-4126-b33a-d78ef701771f",
+              "name": "model",
+              "type": "string",
+              "value": "deepseek/deepseek-r1-distill-llama-8b"
+            },
+            {
+              "id": "301f86ec-260f-4d69-abd9-bde982e3e0aa",
+              "name": "prompt",
+              "type": "string",
+              "value": "={{ $json.chatInput }}"
+            },
+            {
+              "id": "a9f65181-902d-48f5-95ce-1352d391a056",
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ $json.sessionId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "576bb6cd-a2f4-48a5-aae4-ea5e9a6856e7",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -4864,
+        -928
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {}
+      },
+      "id": "073369cf-ae3c-4c15-b01e-3f4a435a284c",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -4624,
+        -928
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "model": "={{ $json.model }}",
+        "options": {}
+      },
+      "id": "22fdbd5a-55b8-4c75-a113-c6a8fdb0d6f3",
+      "name": "LLM Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -4640,
+        -752
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "content": "## Settings\nSpecify the model",
+        "height": 304,
+        "width": 180
+      },
+      "id": "4edb5fad-8885-477e-8a87-6c164ac71864",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4896,
+        -1040
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Run LLM\nUsing OpenRouter to make model fully configurable",
+        "height": 400,
+        "width": 380,
+        "color": 3
+      },
+      "id": "ba3e89c4-9a72-491d-8531-a17c270fa382",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4672,
+        -1040
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "\n",
+        "height": 560,
+        "width": 768,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4960,
+        -1104
+      ],
+      "typeVersion": 1,
+      "id": "c2aa0ad8-3d11-4d54-a225-8d36e5601f36",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputs = $input.all();\n\nconst enrichedData = {\n  contact: {\n    email: null,\n    name: null\n  },\n  enrichment: {\n    pdl: {},\n    individual: {},\n    company: {},\n    linkedin: {}\n  },\n  metadata: {\n    enrichmentTimestamp: new Date().toISOString(),\n    sourcesSuccessful: [],\n    sourcesFailed: []\n  }\n};\n\ninputs.forEach((input, index) => {\n  const data = input.json;\n  \n  if (index === 0 && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {\n    const content = data.choices[0].message.content;\n    enrichedData.enrichment.individual = {\n      rawResearch: content,\n      recentActivity: extractSection(content, 'RECENT ACTIVITY'),\n      expertise: extractSection(content, 'EXPERTISE'),\n      outreachAngle: extractSection(content, 'OUTREACH ANGLE'),\n      timing: extractSection(content, 'TIMING')\n    };\n    enrichedData.metadata.sourcesSuccessful.push('Individual Research');\n  }\n  \n  else if (index === 1 && data && !data.error) {\n    const pdl = data.data || data;\n    enrichedData.enrichment.pdl = {\n      fullName: pdl.full_name,\n      jobTitle: pdl.job_title,\n      companyName: pdl.job_company_name,\n      companySize: pdl.job_company_size,\n      industry: pdl.job_company_industry,\n      seniorityLevel: pdl.job_title_levels,\n      linkedinUrl: pdl.linkedin_url,\n      location: pdl.location_name,\n      skills: pdl.skills\n    };\n    enrichedData.contact.name = pdl.full_name;\n    enrichedData.metadata.sourcesSuccessful.push('PDL');\n  }\n  \n  else if (index === 2 && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {\n    const content = data.choices[0].message.content;\n    enrichedData.enrichment.company = {\n      rawResearch: content,\n      developments: extractSection(content, 'RECENT DEVELOPMENTS'),\n      buyingSignals: extractSection(content, 'BUYING SIGNALS'),\n      companyHealth: extractSection(content, 'COMPANY HEALTH'),\n      priority: extractSection(content, 'PRIORITY')\n    };\n    enrichedData.metadata.sourcesSuccessful.push('Company Research');\n  }\n  \n  else if (index === 3 && data && Array.isArray(data) && data.length > 0) {\n    const profile = data[0];\n    enrichedData.enrichment.linkedin = {\n      headline: profile.headline,\n      summary: profile.summary,\n      recentPosts: profile.posts ? profile.posts.slice(0, 5) : [],\n      connectionsCount: profile.connectionsCount,\n      postsAnalyzed: true\n    };\n    enrichedData.metadata.sourcesSuccessful.push('LinkedIn');\n  }\n  \n  else if (index === 4 && data.validationPassed) {\n    enrichedData.contact.email = data.email;\n    enrichedData.contact.domain = data.domain;\n    enrichedData.contact.isFreeEmail = data.isFreeEmail;\n  }\n});\n\nconst qualityScore = calculateQuality(enrichedData);\nenrichedData.metadata.dataQualityScore = qualityScore;\n\nfunction extractSection(text, header) {\n  const pattern = header + ': ';\n  const startIdx = text.indexOf(pattern);\n  if (startIdx === -1) return 'N/A';\n  const afterHeader = text.substring(startIdx + pattern.length);\n  const endIdx = afterHeader.search(/\\n[A-Z]/);\n  return endIdx === -1 ? afterHeader.trim() : afterHeader.substring(0, endIdx).trim();\n}\n\nfunction calculateQuality(data) {\n  let score = 0;\n  if (data.enrichment.pdl.fullName) score += 25;\n  if (data.enrichment.individual.recentActivity !== 'N/A') score += 25;\n  if (data.enrichment.company.developments !== 'N/A') score += 25;\n  if (data.enrichment.linkedin.postsAnalyzed) score += 25;\n  return score;\n}\n\nreturn [{ json: enrichedData }];"
+      },
+      "id": "c0cbce98-1d18-4e3a-9b5e-3801c938c58b",
+      "name": "Merge Enrichment Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -3776,
+        -896
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "id": "0b8d5936-f0dd-4215-8e9c-8b15649de4f1",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        -3968,
+        -944
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output;\n\nlet scoring;\ntry {\n  let cleaned = raw.replace(/```json\\n?|```\\n?/g, '').trim();\n  cleaned = cleaned.replace(/,(\\s*[}\\]])/g, '$1');\n  scoring = JSON.parse(cleaned);\n  \n} catch (err) {\n  const extract = (field) => {\n    const regex = new RegExp('\"' + field + '\":\\\\s*\"([^\"]*(?:\\\\\\\\.[^\"]*)*)\"', 's');\n    const match = raw.match(regex);\n    return match ? match[1].replace(/\\\\n/g, '\\n').replace(/\\\\\"/g, '\"') : null;\n  };\n  \n  const extractArray = (field) => {\n    const regex = new RegExp('\"' + field + '\":\\\\s*\\\\[([^\\\\]]+)\\\\]', 's');\n    const match = raw.match(regex);\n    if (!match) return [];\n    return match[1].split(',').map(s => s.trim().replace(/^\"|\"$/g, ''));\n  };\n  \n  const extractNumber = (field) => {\n    const regex = new RegExp('\"' + field + '\":\\\\s*(\\\\d+)');\n    const match = raw.match(regex);\n    return match ? parseInt(match[1]) : 0;\n  };\n  \n  const extractObject = (field) => {\n    const regex = new RegExp('\"' + field + '\":\\\\s*({[^}]+})');\n    const match = raw.match(regex);\n    if (!match) return {};\n    try {\n      return JSON.parse(match[1]);\n    } catch {\n      return {};\n    }\n  };\n  \n  scoring = {\n    email: extract('email'),\n    name: extract('name'),\n    title: extract('title'),\n    companyName: extract('companyName'),\n    companySize: extract('companySize'),\n    industry: extract('industry'),\n    seniorityLevel: extractArray('seniorityLevel'),\n    linkedinUrl: extract('linkedinUrl'),\n    individualResearch: extract('individualResearch'),\n    companyResearch: extract('companyResearch'),\n    dataQualityScore: extractNumber('dataQualityScore'),\n    leadScore: extractNumber('leadScore'),\n    scoreBreakdown: extractObject('scoreBreakdown'),\n    icpMatch: extractObject('icpMatch'),\n    keyInsights: extractArray('keyInsights'),\n    outreachRecommendation: extract('outreachRecommendation'),\n    conversationStarters: extractArray('conversationStarters'),\n    timingOpportunities: extractArray('timingOpportunities'),\n    redFlags: extractArray('redFlags'),\n    nextAction: extract('nextAction'),\n    confidenceLevel: extract('confidenceLevel'),\n    routingCategory: extract('routingCategory')\n  };\n}\n\nconst finalLead = {\n  email: scoring.email,\n  name: scoring.name,\n  title: scoring.title,\n  companyName: scoring.companyName,\n  companySize: scoring.companySize,\n  industry: scoring.industry,\n  seniorityLevel: scoring.seniorityLevel,\n  linkedinUrl: scoring.linkedinUrl,\n  individualResearch: scoring.individualResearch,\n  companyResearch: scoring.companyResearch,\n  dataQualityScore: scoring.dataQualityScore,\n  leadScore: scoring.leadScore,\n  scoreBreakdown: scoring.scoreBreakdown,\n  scoreReasoning: scoring.leadScore + '/10 - ' + Object.entries(scoring.scoreBreakdown || {}).map(function(pair) { return pair[0] + ': ' + pair[1]; }).join(', '),\n  icpMatch: scoring.icpMatch,\n  companySizeMatch: scoring.icpMatch ? scoring.icpMatch.companySizeMatch : null,\n  industryMatch: scoring.icpMatch ? scoring.icpMatch.industryMatch : null,\n  titleMatch: scoring.icpMatch ? scoring.icpMatch.titleMatch : null,\n  keyInsights: scoring.keyInsights || [],\n  outreachRecommendation: scoring.outreachRecommendation,\n  conversationStarters: scoring.conversationStarters || [],\n  timingOpportunities: scoring.timingOpportunities || [],\n  redFlags: scoring.redFlags || [],\n  nextAction: scoring.nextAction,\n  confidenceLevel: scoring.confidenceLevel,\n  routingCategory: scoring.routingCategory,\n  processedAt: new Date().toISOString()\n};\n\nreturn [{ json: finalLead }];"
+      },
+      "id": "0f2bd5fc-f584-4dde-9876-5e7efa68830d",
+      "name": "Parse & Structure Output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -3296,
+        -896
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a B2B lead scoring AI with access to ICP rules stored in a Google Doc.\n\nCRITICAL FIRST STEP: Use the available Google Docs tool to fetch the ICP scoring rules document before analyzing the lead.\n\nLead Data:\n{{ JSON.stringify($json, null, 2) }}\n\nSCORING PROCESS:\n1. Fetch ICP rules from the doc\n2. Score each component (0-3 for company, 0-3 for title, 0-2 for signals, 0-2 for timing) based on the rules\n3. CRITICAL: Calculate leadScore by ADDING the four breakdown scores together\n   leadScore equals companyFit plus titleFit plus buyingSignals plus timing\n4. Determine routing category based on total score:\n   - 8-10 equals hot\n   - 5-7 equals warm  \n   - 0-4 equals cold\n\nSCORING RULES:\n- Company Fit (0-3): Compare company size, industry, and geography against ICP criteria in doc\n- Title Fit (0-3): Match persona title against ICP persona tiers in doc\n- Buying Signals (0-2): Count strong/medium signals from research data\n- Timing (0-2): Assess urgency based on recent changes and signals\n\nReturn ONLY valid JSON (no markdown, no code blocks) with these fields: email, name, title, companyName, companySize, industry, seniorityLevel, linkedinUrl, individualResearch, companyResearch, dataQualityScore, leadScore (sum of breakdown scores), scoreBreakdown object with companyFit/titleFit/buyingSignals/timing, icpMatch object with companySizeMatch/industryMatch/titleMatch booleans, keyInsights array, outreachRecommendation string, conversationStarters array, timingOpportunities array, redFlags array, nextAction string, confidenceLevel string, routingCategory string based on score thresholds above.",
+        "options": {}
+      },
+      "id": "224075e9-de28-4ddc-95b0-bb7903e1585c",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -3616,
+        -896
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 384,
+        "width": 1024,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4064,
+        -1024
+      ],
+      "typeVersion": 1,
+      "id": "43b74d3c-1fdf-4356-b2c1-c21bf19b254e",
+      "name": "Sticky Note12"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Write email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Email Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write email": {
+      "main": [
+        [
+          {
+            "node": "Set Email text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approve Email": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Email text": {
+      "main": [
+        [
+          {
+            "node": "Approve Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "Write email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Intake Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Strip HTML Tags": {
+      "main": [
+        []
+      ]
+    },
+    "Fetch Lead Website": {
+      "main": [
+        [
+          {
+            "node": "Strip HTML Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Sources": {
+      "main": [
+        [
+          {
+            "node": "Merge Enrichment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Enrichment Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Structure Output": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Parse & Structure Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "acfc7144-b8ee-4d7e-9fa7-f248f0ad9828",
+  "meta": {
+    "instanceId": "1d08c455cbb3811a68ce7c1532f1b044162582ded6f0b8b06eb5d9f207550ac1"
+  },
+  "nodeGroups": [],
+  "id": "8lBJ9igj3O87DBXo",
+  "tags": []
+}
